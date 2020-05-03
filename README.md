@@ -1,6 +1,6 @@
 # simple-stack-fastapi-edgedb
 
-This is an alternate version of Tiangolo's https://github.com/tiangolo/full-stack-fastapi-postgresql but using[EdgeDB](https://github.com/edgedb/edgedb). SQLALchemy ORM was replaced by async queries using EdgeDB Python driver.
+This is an alternate version of Tiangolo's https://github.com/tiangolo/full-stack-fastapi-postgresql but using [EdgeDB](https://github.com/edgedb/edgedb). SQLALchemy ORM was replaced by async queries using EdgeDB Python driver.
 
 Also I tried to simplify the backend folder structure and I also removed Cookiecutter, Docker Compose, Traefik, Celery, PGAdmin and Sentry related stuff.
 
@@ -71,7 +71,7 @@ npm run serve
 
 Then open your browser at http://localhost:8080
 
-Alternatively, if you are not interested to install Node.js directly in your system, you can use the "nodeenv" package in a Python virtual environment:
+Alternatively, if you are not interested in install Node.js directly in your system, you can use the "nodeenv" package in a Python virtual environment:
 
 ```bash
 cd frontend
@@ -85,4 +85,4 @@ npm run serve
 
 ## Caveats
 
-"Additional Response with model" from https://fastapi.tiangolo.com/advanced/additional-responses/ doare not working to me.
+"Additional Response with model" from https://fastapi.tiangolo.com/advanced/additional-responses/ doesn't work for me.
