@@ -45,7 +45,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Now you can run a schema migration in your EdgeDB and create a first user in the system.
+Now you can run a schema migration in your EdgeDB and create a first user in the system. The first user credentials are defined in `backend/.env` file.
 
 ```bash
 scripts/migrate.sh
