@@ -72,7 +72,7 @@ class ItemUpdate(ItemBase):
 
 class Item(ItemBase):
     id: UUID
-    owner: NestedUser
+    owner: Optional[NestedUser] = None
 
 
 class PaginatedUsers(BaseModel):
