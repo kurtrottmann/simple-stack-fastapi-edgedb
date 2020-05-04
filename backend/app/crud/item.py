@@ -34,14 +34,16 @@ async def get_multi(
         result = await con.fetchone_json(
             """SELECT <json>(
                 count:= count(Item),
-                data := array_agg(
-                    Item {
+                data := array_agg((
+                    SELECT Item {
                         id,
                         title,
                         description,
                         owner: { id, full_name, email }
                     }
-                )[<int16>$offset:<int16>$offset+<int16>$limit]
+                    OFFSET <int64>$offset
+                    LIMIT <int64>$limit
+                ))
             )""",
             offset=skip,
             limit=limit,
@@ -63,14 +65,16 @@ async def get_multi_by_owner(
             )
             SELECT <json>(
                 count:= count(items),
-                data := array_agg(
-                    items {
+                data := array_agg((
+                    SELECT items {
                         id,
                         title,
                         description,
                         owner: { id, full_name, email }
                     }
-                )[<int16>$offset:<int16>$offset+<int16>$limit]
+                    OFFSET <int64>$offset
+                    LIMIT <int64>$limit
+                ))
             )""",
             id=id,
             offset=skip,
