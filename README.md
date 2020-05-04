@@ -1,6 +1,6 @@
 # simple-stack-fastapi-edgedb
 
-This is an alternate version of Tiangolo's https://github.com/tiangolo/full-stack-fastapi-postgresql but using [EdgeDB](https://github.com/edgedb/edgedb). SQLALchemy ORM was replaced by async queries using EdgeDB Python driver.
+This is an alternative version of Tiangolo's https://github.com/tiangolo/full-stack-fastapi-postgresql but using [EdgeDB](https://github.com/edgedb/edgedb). SQLALchemy ORM was replaced by async queries using EdgeDB Python driver.
 
 Also I tried to simplify the backend folder structure and I also removed Cookiecutter, Docker Compose, Traefik, Celery, PGAdmin and Sentry related stuff.
 
