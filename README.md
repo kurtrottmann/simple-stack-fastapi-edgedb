@@ -1,8 +1,8 @@
 # simple-stack-fastapi-edgedb
 
-This is an alternative version of Tiangolo's https://github.com/tiangolo/full-stack-fastapi-postgresql but using [EdgeDB](https://github.com/edgedb/edgedb). SQLALchemy ORM was replaced by async queries using EdgeDB Python driver.
+This is an alternative version of https://github.com/tiangolo/full-stack-fastapi-postgresql but using [EdgeDB](https://github.com/edgedb/edgedb). SQLALchemy ORM was replaced by async queries using EdgeDB Python driver.
 
-Also I tried to simplify the backend folder structure and I also removed Cookiecutter, Docker Compose, Traefik, Celery, PGAdmin and Sentry related stuff.
+I tried to simplify the backend folder structure and I also removed Cookiecutter, Docker Compose, Traefik, Celery, PGAdmin and Sentry related stuff.
 
 The frontend is the same of the original project except a little change to work with UUID ids.
 
@@ -18,7 +18,7 @@ The frontend is the same of the original project except a little change to work 
 
 To install EdgeDB follow the official [EdgeDB](https://edgedb.com/download?distro=docker) Docs.
 
-The easiest way is to run it using Docker (replace <datadir> with the docker volume you want to persist the data in):
+The easiest way is to run it using Docker (replace <datadir> with the docker volume name you want to persist the data in):
 
 ```bash
 $ docker run -it --rm -p 5656:5656 -p 8888:8888 \
@@ -28,7 +28,7 @@ $ docker run -it --rm -p 5656:5656 -p 8888:8888 \
 
 ```
 
-You can check if the DB is running properly opening EdgeDB cli from a linked container:
+You can check if the DB is running properly opening an EdgeDB cli from a linked container:
 
 ```bash
  $ docker run --link=edgedb-server --rm -it \
@@ -36,7 +36,7 @@ You can check if the DB is running properly opening EdgeDB cli from a linked con
     edgedb -u edgedb -H edgedb-server
 ```
 
-Then install FastApi, Uvicorn, EdgeDB driver and related dependencies. For example, using a Python virtual environment:
+Then install Python dependencies. For example, using a Python virtual environment:
 
 ```bash
 cd backend
@@ -45,7 +45,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Now you can run a schema migration in your EdgeDB and create a first user in the system. The first user credentials are defined in `backend/.env` file.
+Now you can run a schema migration in your EdgeDB and create a first superuser in the system. The first superuser credentials are defined in `backend/.env` file.
 
 ```bash
 scripts/migrate.sh

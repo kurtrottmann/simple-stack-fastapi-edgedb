@@ -139,10 +139,8 @@ async def create_with_owner(
 
 
 async def update(con: AsyncIOConnection, *, db_obj: Item, obj_in: ItemUpdate) -> Item:
-    update_data = obj_in.dict(exclude_unset=True, exclude={"owner_id"})
+    update_data = obj_in.dict(exclude_unset=True)
     shape = ", ".join([k + db.type_cast(update_data[k]) + k for k in update_data])
-    if obj_in.owner_id:
-        shape += f", owner := (SELECT User FILTER .id = <uuid>'{obj_in.owner_id}')"
     try:
         result = await con.fetchone_json(
             f"""SELECT (

@@ -63,16 +63,14 @@ class ItemBase(BaseModel):
 
 class ItemCreate(ItemBase):
     title: str
-    owner_id: Optional[UUID] = None
 
 
 class ItemUpdate(ItemBase):
-    owner_id: Optional[UUID] = None
-
+    pass
 
 class Item(ItemBase):
     id: UUID
-    owner: Optional[NestedUser] = None
+    owner: NestedUser
 
 
 class PaginatedUsers(BaseModel):

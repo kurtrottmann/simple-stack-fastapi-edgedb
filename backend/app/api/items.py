@@ -38,17 +38,9 @@ async def create_item(
     """
     Create new item.
     """
-    if current_user.is_superuser:
-        if item_in.owner_id:
-            item = await crud.item.create_with_owner(
-                con, obj_in=item_in, owner_id=item_in.owner_id
-            )
-        else:
-            item = await crud.item.create(con, obj_in=item_in)
-    else:
-        item = await crud.item.create_with_owner(
-            con, obj_in=item_in, owner_id=current_user.id
-        )
+    item = await crud.item.create_with_owner(
+        con, obj_in=item_in, owner_id=current_user.id
+    )
     return item
 
 
@@ -66,9 +58,8 @@ async def update_item(
     item = await crud.item.get(con, id=item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    if item.owner:
-        if not current_user.is_superuser and (item.owner.id != current_user.id):
-            raise HTTPException(status_code=400, detail="Not enough permissions")
+    if not current_user.is_superuser and (item.owner.id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     item = await crud.item.update(con, db_obj=item, obj_in=item_in)
     return item
 
@@ -86,9 +77,8 @@ async def read_item(
     item = await crud.item.get(con, id=item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    if item.owner:
-        if not current_user.is_superuser and (item.owner.id != current_user.id):
-            raise HTTPException(status_code=400, detail="Not enough permissions")
+    if not current_user.is_superuser and (item.owner.id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return item
 
 
@@ -105,8 +95,7 @@ async def delete_item(
     item = await crud.item.get(con, id=item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
-    if item.owner:
-        if not current_user.is_superuser and (item.owner.id != current_user.id):
-            raise HTTPException(status_code=400, detail="Not enough permissions")
+    if not current_user.is_superuser and (item.owner.id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     item = await crud.item.remove(con, id=item_id)
     return item
