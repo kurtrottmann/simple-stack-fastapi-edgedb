@@ -68,6 +68,7 @@ class ItemCreate(ItemBase):
 class ItemUpdate(ItemBase):
     pass
 
+
 class Item(ItemBase):
     id: UUID
     owner: NestedUser
