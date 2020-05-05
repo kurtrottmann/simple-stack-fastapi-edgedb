@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any
 from uuid import UUID
 
 from edgedb import AsyncIOConnection
@@ -9,7 +9,7 @@ from app import auth, crud, db, schemas
 router = APIRouter()
 
 
-@router.get("/", responses={200: {"model": List[schemas.Item]}})
+@router.get("/", response_model=schemas.PaginatedItems)
 async def read_items(
     con: AsyncIOConnection = Depends(db.get_con),
     skip: int = 0,
@@ -28,7 +28,7 @@ async def read_items(
     return items
 
 
-@router.post("/", status_code=201, responses={201: {"model": schemas.Item}})
+@router.post("/", response_model=schemas.Item, status_code=201)
 async def create_item(
     *,
     con: AsyncIOConnection = Depends(db.get_con),
@@ -44,7 +44,7 @@ async def create_item(
     return item
 
 
-@router.put("/{item_id}", responses={200: {"model": schemas.Item}})
+@router.put("/{item_id}", response_model=schemas.Item)
 async def update_item(
     *,
     con: AsyncIOConnection = Depends(db.get_con),
@@ -64,7 +64,7 @@ async def update_item(
     return item
 
 
-@router.get("/{item_id}", responses={200: {"model": schemas.Item}})
+@router.get("/{item_id}", response_model=schemas.Item)
 async def read_item(
     *,
     con: AsyncIOConnection = Depends(db.get_con),
@@ -82,7 +82,7 @@ async def read_item(
     return item
 
 
-@router.delete("/{item_id}", responses={200: {"model": schemas.Item}})
+@router.delete("/{item_id}", response_model=schemas.Item)
 async def delete_item(
     *,
     con: AsyncIOConnection = Depends(db.get_con),

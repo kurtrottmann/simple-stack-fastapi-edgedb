@@ -82,7 +82,3 @@ nodeenv -p
 npm install
 npm run serve
 ```
-
-## Caveats
-
-"Additional Response with model" from https://fastapi.tiangolo.com/advanced/additional-responses/ doesn't work for me.

@@ -86,29 +86,6 @@ async def get_multi_by_owner(
     return paginated_items
 
 
-async def create(con: AsyncIOConnection, *, obj_in: ItemCreate) -> Item:
-    try:
-        result = await con.fetchone_json(
-            """SELECT (
-                INSERT Item {
-                    title := <str>$title,
-                    description := <str>$description,
-                }
-            ) {
-                id,
-                title,
-                description,
-                owner: { id, full_name, email }
-            }""",
-            title=obj_in.title,
-            description=obj_in.description,
-        )
-    except Exception as e:
-        print(f"EXCEPTION: {e}")
-    item = Item.parse_raw(result)
-    return item
-
-
 async def create_with_owner(
     con: AsyncIOConnection, *, obj_in: ItemCreate, owner_id: UUID
 ) -> Item:

@@ -13,7 +13,7 @@ from app.email import send_new_account_email
 router = APIRouter()
 
 
-@router.get("/", responses={200: {"model": schemas.PaginatedUsers}})
+@router.get("/", response_model=schemas.PaginatedUsers)
 async def read_users(
     con: AsyncIOConnection = Depends(db.get_con),
     skip: int = 0,
@@ -27,7 +27,7 @@ async def read_users(
     return paginated_users
 
 
-@router.post("/", status_code=201, responses={201: {"model": schemas.User}})
+@router.post("/", response_model=schemas.User, status_code=201)
 async def create_user(
     *,
     con: AsyncIOConnection = Depends(db.get_con),
@@ -51,7 +51,7 @@ async def create_user(
     return user
 
 
-@router.put("/me", responses={200: {"model": schemas.User}})
+@router.put("/me", response_model=schemas.User)
 async def update_user_me(
     *,
     con: AsyncIOConnection = Depends(db.get_con),
@@ -75,7 +75,7 @@ async def update_user_me(
     return user
 
 
-@router.get("/me", responses={200: {"model": schemas.User}})
+@router.get("/me", response_model=schemas.User)
 async def read_user_me(
     con: AsyncIOConnection = Depends(db.get_con),
     current_user: schemas.User = Depends(auth.get_current_active_user),
@@ -86,7 +86,7 @@ async def read_user_me(
     return current_user
 
 
-@router.post("/open", status_code=201, responses={201: {"model": schemas.User}})
+@router.post("/open", response_model=schemas.User, status_code=201)
 async def create_user_open(
     *,
     con: AsyncIOConnection = Depends(db.get_con),
@@ -113,7 +113,7 @@ async def create_user_open(
     return user
 
 
-@router.get("/{user_id}", responses={200: {"model": schemas.User}})
+@router.get("/{user_id}", response_model=schemas.User)
 async def read_user(
     *,
     con: AsyncIOConnection = Depends(db.get_con),
@@ -135,7 +135,7 @@ async def read_user(
     return user
 
 
-@router.put("/{user_id}", responses={200: {"model": schemas.User}})
+@router.put("/{user_id}", response_model=schemas.User)
 async def update_user(
     *,
     con: AsyncIOConnection = Depends(db.get_con),

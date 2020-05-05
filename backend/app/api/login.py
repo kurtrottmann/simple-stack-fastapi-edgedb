@@ -41,7 +41,7 @@ async def login_access_token(
     return token
 
 
-@router.post("/login/test-token", responses={200: {"model": schemas.User}})
+@router.post("/login/test-token", response_model=schemas.User)
 async def test_token(
     current_user: schemas.User = Depends(auth.get_current_user),
 ) -> Any:
