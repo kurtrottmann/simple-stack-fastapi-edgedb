@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  db:
+    image: edgedb/edgedb:1-alpha6
+    volumes:
+      - edgedb-data:/var/lib/edgedb/data
+    ports:
+      - "5656:5656"
+  backend:
+    depends_on:
+      - db
+    build: ./backend
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+    command: sh -c "PYTHONPATH=. python app/initial_data.py &&
+                    uvicorn --host 0.0.0.0 --reload app.main:app"
+    ports:
+      - "8000:8000"
+  frontend:
+    ports:
+      - "8080:80"
+    build:
+      context: ./frontend
+      args:
+        FRONTEND_ENV: dev
+
+volumes:
+  edgedb-data:

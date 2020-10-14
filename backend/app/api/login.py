@@ -7,13 +7,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from app import auth, crud, db, schemas
 from app.config import settings
-from app.email import send_reset_password_email
 from app.security import (
     create_access_token,
     generate_password_reset_token,
     get_password_hash,
     verify_password_reset_token,
 )
+from app.utils import send_reset_password_email
 
 router = APIRouter()
 
@@ -94,6 +94,6 @@ async def reset_password(
         raise HTTPException(status_code=400, detail="Inactive user")
     hashed_password = get_password_hash(new_password)
     user_in = schemas.UserUpdate(hashed_password=hashed_password)
-    await crud.user.update(con, db_obj=user, obj_in=user_in)
+    await crud.user.update(con, id=user.id, obj_in=user_in)
     msg = schemas.Msg(msg="Password updated successfully")
     return msg

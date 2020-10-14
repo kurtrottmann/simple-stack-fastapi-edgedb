@@ -1,12 +1,16 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
+from uuid import UUID
 
 import emails
 from emails.template import JinjaTemplate
+from fastapi import HTTPException
 from pydantic import EmailStr
 
 from .config import settings
+
+ALGORITHM = "HS256"
 
 
 def send_email(
@@ -84,3 +88,49 @@ def send_new_account_email(email_to: str, username: str, password: str) -> None:
             "link": link,
         },
     )
+
+
+def get_type(value: Any) -> str:
+    if type(value) == bool:
+        return "<bool>"
+    elif type(value) == str:
+        return "<str>"
+    elif type(value) == int:
+        return "<int64>"
+    elif type(value) == UUID:
+        return "<uuid>"
+    else:
+        raise ValueError("Type not found.")
+
+
+def get_shape(data: Dict[str, Any]) -> str:
+    shape_list = [f"{k} := {get_type(v)}${k}" for k, v in data.items()]
+    shape_expr = ", ".join(shape_list)
+    return shape_expr
+
+
+def get_filter(filtering: Dict[str, Any]) -> str:
+    filter_list = [
+        f".{f.replace('__','.')} = {get_type(v)}${f}" for f, v in filtering.items()
+    ]
+    filter_expr = " AND ".join(filter_list)
+    return filter_expr
+
+
+def get_order(ordering: str, ordering_fields: List) -> str:
+    order_list = []
+    fields = ordering.split(",")
+    for f in fields:
+        if f.startswith("-"):
+            f = f[1:]
+            direction = " DESC"
+        else:
+            direction = ""
+        if f in ordering_fields:
+            order_list.append(f".{f.replace('__','.')}{direction}")
+        else:
+            raise HTTPException(
+                status_code=400, detail=f"Ordering field '{f}' not allowed."
+            )
+    order_expr = " THEN ".join(order_list)
+    return order_expr

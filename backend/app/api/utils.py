@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from pydantic.networks import EmailStr
 
 from app import auth, schemas
-from app.email import send_test_email
+from app.utils import send_test_email
 
 router = APIRouter()
 

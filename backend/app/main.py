@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from .api import api_router
-from .config import settings
-from .db import close_pool, create_pool
+from app.api import api_router
+from app.config import settings
+from app.db import close_pool, create_pool
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

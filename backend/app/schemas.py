@@ -1,7 +1,51 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr
+
+user_ordering_fields = [
+    "id",
+    "full_name",
+    "email",
+    "is_active",
+    "is_superuser",
+    "num_items",
+]
+
+item_ordering_fields = [
+    "id",
+    "title",
+    "description",
+    "owner__full_name",
+    "owner__email",
+]
+
+
+class CommonQueryParams(BaseModel):
+    ordering: Optional[str] = None
+    offset: int = 0
+    limit: int = 100
+
+
+class FilterQueryParams(BaseModel):
+    def dict_exclude_unset(self) -> Dict[str, Any]:
+        return {k: v for k, v in self.dict().items() if v is not None}
+
+
+class UserFilterParams(FilterQueryParams):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    is_active: Optional[bool] = None
+    is_superuser: Optional[bool] = None
+    num_items: Optional[int] = None
+
+
+class ItemFilterParams(FilterQueryParams):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    owner__id: Optional[UUID] = None
+    owner__full_name: Optional[str] = None
+    owner__email: Optional[EmailStr] = None
 
 
 class Msg(BaseModel):

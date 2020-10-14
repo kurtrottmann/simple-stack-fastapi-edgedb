@@ -8,7 +8,7 @@ from pydantic.networks import EmailStr
 
 from app import auth, crud, db, schemas
 from app.config import settings
-from app.email import send_new_account_email
+from app.utils import send_new_account_email
 
 router = APIRouter()
 
@@ -16,14 +16,20 @@ router = APIRouter()
 @router.get("/", response_model=schemas.PaginatedUsers)
 async def read_users(
     con: AsyncIOConnection = Depends(db.get_con),
-    skip: int = 0,
-    limit: int = 100,
+    filtering: schemas.UserFilterParams = Depends(),
+    commons: schemas.CommonQueryParams = Depends(),
     current_user: schemas.User = Depends(auth.get_current_active_superuser),
 ) -> Any:
     """
     Retrieve users.
     """
-    paginated_users = await crud.user.get_multi(con, skip=skip, limit=limit)
+    paginated_users = await crud.user.get_multi(
+        con,
+        filtering=filtering.dict_exclude_unset(),
+        ordering=commons.ordering,
+        offset=commons.offset,
+        limit=commons.limit,
+    )
     return paginated_users
 
 
@@ -71,7 +77,7 @@ async def update_user_me(
         user_in.full_name = full_name
     if email is not None:
         user_in.email = email
-    user = await crud.user.update(con, db_obj=current_user, obj_in=user_in)
+    user = await crud.user.update(con, id=current_user.id, obj_in=user_in)
     return user
 
 
@@ -152,5 +158,24 @@ async def update_user(
             status_code=404,
             detail="The user with this username does not exist in the system",
         )
-    user = await crud.user.update(con, db_obj=user, obj_in=user_in)
+    user = await crud.user.update(con, id=user_id, obj_in=user_in)
+    return user
+
+
+@router.delete("/{user_id}", response_model=schemas.User)
+async def delete_user(
+    *,
+    con: AsyncIOConnection = Depends(db.get_con),
+    user_id: UUID,
+    current_user: schemas.User = Depends(auth.get_current_active_user),
+) -> Any:
+    """
+    Delete a user.
+    """
+    user = await crud.user.get(con, id=user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not current_user.is_superuser and (user.id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    user = await crud.user.remove(con, id=user_id)
     return user

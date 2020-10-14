@@ -12,19 +12,22 @@ router = APIRouter()
 @router.get("/", response_model=schemas.PaginatedItems)
 async def read_items(
     con: AsyncIOConnection = Depends(db.get_con),
-    skip: int = 0,
-    limit: int = 100,
+    filtering: schemas.ItemFilterParams = Depends(),
+    commons: schemas.CommonQueryParams = Depends(),
     current_user: schemas.User = Depends(auth.get_current_active_user),
 ) -> Any:
     """
     Retrieve items.
     """
-    if current_user.is_superuser:
-        items = await crud.item.get_multi(con, skip=skip, limit=limit)
-    else:
-        items = await crud.item.get_multi_by_owner(
-            con, owner_id=current_user.id, skip=skip, limit=limit
-        )
+    if not current_user.is_superuser:
+        filtering.owner__id = current_user.id
+    items = await crud.item.get_multi(
+        con,
+        filtering=filtering.dict_exclude_unset(),
+        ordering=commons.ordering,
+        offset=commons.offset,
+        limit=commons.limit,
+    )
     return items
 
 
@@ -38,9 +41,7 @@ async def create_item(
     """
     Create new item.
     """
-    item = await crud.item.create_with_owner(
-        con, obj_in=item_in, owner_id=current_user.id
-    )
+    item = await crud.item.create(con, obj_in=item_in, owner_id=current_user.id)
     return item
 
 
@@ -60,7 +61,7 @@ async def update_item(
         raise HTTPException(status_code=404, detail="Item not found")
     if not current_user.is_superuser and (item.owner.id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    item = await crud.item.update(con, db_obj=item, obj_in=item_in)
+    item = await crud.item.update(con, id=item_id, obj_in=item_in)
     return item
 
 

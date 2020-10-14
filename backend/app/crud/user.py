@@ -1,24 +1,35 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from edgedb import AsyncIOConnection, NoDataError
+from fastapi import HTTPException
 
-from app import db
-from app.schemas import PaginatedUsers, User, UserCreate, UserInDB, UserUpdate
+from app import utils
+from app.schemas import (
+    PaginatedUsers,
+    User,
+    UserCreate,
+    UserInDB,
+    UserUpdate,
+    user_ordering_fields,
+)
 from app.security import get_password_hash, verify_password
 
 
 async def get(con: AsyncIOConnection, *, id: UUID) -> Optional[User]:
     try:
-        result = await con.fetchone_json(
+        result = await con.query_one_json(
             """SELECT User {
+                id,
+                email,
+                full_name,
+                is_superuser,
+                is_active,
+                num_items,
+                items: {
                     id,
-                    full_name,
-                    email,
-                    is_superuser,
-                    is_active,
-                    num_items := count(.<owner[IS Item]),
-                    items:= .<owner[IS Item] { id, title }
+                    title
+                }
             }
             FILTER .id = <uuid>$id""",
             id=id,
@@ -26,22 +37,25 @@ async def get(con: AsyncIOConnection, *, id: UUID) -> Optional[User]:
     except NoDataError:
         return None
     except Exception as e:
-        print(f"EXCEPTION: {e}")
+        raise HTTPException(status_code=400, detail=f"{e}")
     user = User.parse_raw(result)
     return user
 
 
 async def get_by_email(con: AsyncIOConnection, *, email: str) -> Optional[User]:
     try:
-        result = await con.fetchone_json(
+        result = await con.query_one_json(
             """SELECT User {
+                id,
+                email,
+                full_name,
+                is_superuser,
+                is_active,
+                num_items,
+                items: {
                     id,
-                    full_name,
-                    email,
-                    is_superuser,
-                    is_active,
-                    num_items := count(.<owner[IS Item]),
-                    items:= .<owner[IS Item] { id, title }
+                    title
+                }
             }
             FILTER .email = <str>$email""",
             email=email,
@@ -49,100 +63,155 @@ async def get_by_email(con: AsyncIOConnection, *, email: str) -> Optional[User]:
     except NoDataError:
         return None
     except Exception as e:
-        print(f"EXCEPTION: {e}")
+        raise HTTPException(status_code=400, detail=f"{e}")
     user = User.parse_raw(result)
     return user
 
 
 async def get_multi(
-    con: AsyncIOConnection, *, skip: int = 0, limit: int = 100
+    con: AsyncIOConnection,
+    *,
+    filtering: Dict[str, Any] = {},
+    ordering: str = None,
+    offset: int = 0,
+    limit: int = 100,
 ) -> PaginatedUsers:
+    filter_expr = None
+    order_expr = None
+    if filtering:
+        filter_expr = utils.get_filter(filtering)
+    if ordering:
+        order_expr = utils.get_order(ordering, user_ordering_fields)
     try:
-        result = await con.fetchone_json(
-            """SELECT <json>(
-                count:= count(User),
+        result = await con.query_one_json(
+            f"""WITH users := (
+                SELECT User
+                FILTER {filter_expr or 'true'}
+            )
+            SELECT <json>(
+                count:= count(users),
                 data := array_agg((
-                    SELECT User {
+                    SELECT users {{
                         id,
-                        full_name,
                         email,
+                        full_name,
                         is_superuser,
                         is_active,
-                        num_items := count(.<owner[IS Item]),
-                        items:= .<owner[IS Item] { id, title }
-                    }
+                        num_items,
+                        items: {{
+                            id,
+                            title
+                        }}
+                    }}
+                    ORDER BY {order_expr or '{}'}
                     OFFSET <int64>$offset
                     LIMIT <int64>$limit
                 ))
             )""",
-            offset=skip,
+            **filtering,
+            offset=offset,
             limit=limit,
         )
     except Exception as e:
-        print(f"EXCEPTION: {e}")
+        raise HTTPException(status_code=400, detail=f"{e}")
     paginated_users = PaginatedUsers.parse_raw(result)
     return paginated_users
 
 
 async def create(con: AsyncIOConnection, *, obj_in: UserCreate) -> User:
+    data_in = obj_in.dict(exclude_unset=True)
+    if data_in.get("password"):
+        data_in["hashed_password"] = get_password_hash(obj_in.password)
+        del data_in["password"]
+    shape_expr = utils.get_shape(data_in)
     try:
-        result = await con.fetchone_json(
-            """SELECT (
-                INSERT User {
-                    full_name := <str>$full_name,
-                    email := <str>$email,
-                    hashed_password := <str>$hashed_password,
-                    is_superuser := <bool>$is_superuser,
-                    is_active := <bool>$is_active
-                }
-            ) {
+        result = await con.query_one_json(
+            f"""SELECT (
+                INSERT User {{
+                    {shape_expr}
+                }}
+            ) {{
                 id,
-                full_name,
                 email,
+                full_name,
                 is_superuser,
                 is_active,
-                num_items := count(.<owner[IS Item]),
-                items:= .<owner[IS Item] { id, title }
-            }""",
-            full_name=obj_in.full_name,
-            email=obj_in.email,
-            hashed_password=get_password_hash(obj_in.password),
-            is_superuser=obj_in.is_superuser,
-            is_active=obj_in.is_active,
+                num_items,
+                items: {{
+                    id,
+                    title
+                }}
+            }}""",
+            **data_in,
         )
     except Exception as e:
-        print(f"EXCEPTION: {e}")
+        raise HTTPException(status_code=400, detail=f"{e}")
     user = User.parse_raw(result)
     return user
 
 
-async def update(con: AsyncIOConnection, *, db_obj: User, obj_in: UserUpdate) -> User:
-    update_data = obj_in.dict(exclude_unset=True)
-    if update_data.get("password"):
-        hashed_password = get_password_hash(update_data["password"])
-        del update_data["password"]
-        update_data["hashed_password"] = hashed_password
-    shape = ", ".join([k + db.type_cast(update_data[k]) + k for k in update_data])
+async def update(
+    con: AsyncIOConnection, *, id: UUID, obj_in: UserUpdate
+) -> Optional[User]:
+    data_in = obj_in.dict(exclude_unset=True)
+    if not data_in:
+        user = await get(con, id=id)
+        return user
+    if data_in.get("password"):
+        data_in["hashed_password"] = get_password_hash(obj_in.password)  # type: ignore
+        del data_in["password"]
+    shape_expr = utils.get_shape(data_in)
     try:
-        result = await con.fetchone_json(
+        result = await con.query_one_json(
             f"""SELECT (
                 UPDATE User
                 FILTER .id = <uuid>$id
-                SET {{ {shape} }}
-            ) {{
-                id,
-                full_name,
-                email,
-                is_superuser,
-                is_active,
-                num_items := count(.<owner[IS Item]),
-                items:= .<owner[IS Item] {{ id, title }}
-            }}""",
-            id=db_obj.id,
-            **update_data,
+                SET {{
+                    {shape_expr}
+                }}
+                ) {{
+                    id,
+                    email,
+                    full_name,
+                    is_superuser,
+                    is_active,
+                    num_items,
+                    items: {{
+                        id,
+                        title
+                    }}
+                }}""",
+            id=id,
+            **data_in,
         )
     except Exception as e:
-        print(f"EXCEPTION: {e}")
+        raise HTTPException(status_code=400, detail=f"{e}")
+    user = User.parse_raw(result)
+    return user
+
+
+async def remove(con: AsyncIOConnection, *, id: UUID) -> User:
+    try:
+        result = await con.query_one_json(
+            """SELECT (
+                DELETE User
+                FILTER .id = <uuid>$id
+            ) {
+                id,
+                email,
+                full_name,
+                is_superuser,
+                is_active,
+                num_items,
+                items: {
+                    id,
+                    title
+                }
+            }""",
+            id=id,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"{e}")
     user = User.parse_raw(result)
     return user
 
@@ -151,11 +220,11 @@ async def authenticate(
     con: AsyncIOConnection, *, email: str, password: str
 ) -> Optional[UserInDB]:
     try:
-        result = await con.fetchone_json(
+        result = await con.query_one_json(
             """SELECT User {
-                    id,
-                    hashed_password,
-                    is_active
+                id,
+                hashed_password,
+                is_active
             }
             FILTER .email = <str>$email""",
             email=email,
@@ -163,7 +232,7 @@ async def authenticate(
     except NoDataError:
         return None
     except Exception as e:
-        print(f"EXCEPTION: {e}")
+        raise HTTPException(status_code=400, detail=f"{e}")
     user = UserInDB.parse_raw(result)
     if not verify_password(password, user.hashed_password):
         return None

@@ -1,84 +1,83 @@
 # simple-stack-fastapi-edgedb
 
-This is an alternative version of https://github.com/tiangolo/full-stack-fastapi-postgresql but using [EdgeDB](https://github.com/edgedb/edgedb). SQLALchemy ORM was replaced by async queries using EdgeDB Python driver.
+This is an alternative version of [full-stack-fastapi-postgresql](https://github.com/tiangolo/full-stack-fastapi-postgresql) but using [EdgeDB](https://github.com/edgedb/edgedb).
 
-I tried to simplify the backend folder structure and I also removed Cookiecutter, Docker Compose, Traefik, Celery, PGAdmin and Sentry related stuff.
+SQLALchemy ORM was replaced by async queries using the EdgeDB Python driver.
 
-The frontend is the same of the original project except a little change to work with UUID ids.
+I tried to simplify the backend folder structure and also removed Cookiecutter, Traefik, Celery, PGAdmin and Sentry related stuff.
 
-## Local Development
+The frontend is the same as the original project except for a little change to work with UUIDs.
 
-### Requirements
+## Instructions
 
-* Python
-* Docker
-* Node.js (with `npm`).
-
-## Backend development
-
-To install EdgeDB follow the official [EdgeDB](https://edgedb.com/download?distro=docker) Docs.
-
-The easiest way is to run it using Docker (replace <datadir> with the docker volume name you want to persist the data in):
+Clone the repository:
 
 ```bash
-$ docker run -it --rm -p 5656:5656 -p 8888:8888 \
-            --name=edgedb-server \
-            -v <datadir>:/var/lib/edgedb/data \
-            edgedb/edgedb
-
+git clone https://github.com/kurtrottmann/simple-stack-fastapi-edgedb.git
+cd simple-stack-fastapi-edgedb
 ```
 
-You can check if the DB is running properly opening an EdgeDB cli from a linked container:
+Start the development stack with Docker Compose:
 
 ```bash
- $ docker run --link=edgedb-server --rm -it \
-    edgedb/edgedb:latest \
-    edgedb -u edgedb -H edgedb-server
+docker-compose up -d
 ```
 
-Then install Python dependencies. For example, using a Python virtual environment:
+To check if the backend and database is up:
 
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+docker-compose logs backend
 ```
 
-Now you can run a schema migration in your EdgeDB and create a first superuser in the system. The first superuser credentials are defined in `backend/.env` file.
+Then you can access to:
+
+- Interactive API Documentation - Swagger: http://localhost:8000/docs
+- Alternative API Documentation - ReDoc: http://localhost:8000/redoc
+- Frontend: http://localhost:8080
+
+Default credentials:
+
+- Username: admin@example.com
+- Password: changethis
+
+If you have [EdgeDB CLI](https://www.edgedb.com/download) installed, you can access the containerized DB with:
+```bash
+ edgedb -u edgedb
+```
+
+### Pagination
+
+For pagination use the `offset` and `limit` query parameters. Example:
 
 ```bash
-scripts/migrate.sh
+http://localhost:8000/api/v1/users/?offset=20&limit=1000
 ```
 
-Finally use Uvicorn to run the backend in port 8000
+### Ordering
+
+The query parameter is `ordering` and the allowed order fields are defined in `schemas.py`. You can specify multiple order fields separated by commas. For reverse ordering, prefix the field name with '-'. Example:
 
 ```bash
-uvicorn app.main:app --reload
+http://localhost:8000/api/v1/users/?ordering=email,-num_items
 ```
 
-You can access http://localhost:8000/docs and interact with the backend.
+### Filtering
 
-## Frontend development
-
-Enter the `frontend` directory, install the NPM packages and start the live server using the `npm` scripts:
+The allowed filter fields are defined in `schemas.py`. You can specify nested filtering fields using the '__' separator. Example:
 
 ```bash
-cd frontend
-npm install
-npm run serve
+http://localhost:8000/api/v1/items/?owner__email=admin@example.com
 ```
 
-Then open your browser at http://localhost:8080
+## Changelog
 
-Alternatively, if you are not interested in install Node.js directly in your system, you can use the "nodeenv" package in a Python virtual environment:
+### 0.2
 
-```bash
-cd frontend
-python -m venv venv
-source venv/bin/activate
-pip install nodeenv
-nodeenv -p
-npm install
-npm run serve
-```
+- Add Docker Compose.
+- Add REST API ordering.
+- Add REST API filtering.
+- Update to EdgeDB 1.0 Alpha 6.
+
+### 0.1
+
+- Initial Release
