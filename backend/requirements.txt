@@ -32,5 +32,5 @@ rsa==4.6
 six==1.15.0
 starlette==0.13.6
 typing-extensions==3.7.4.3
-urllib3==1.25.10
+urllib3==1.26.5
 uvicorn==0.12.1
